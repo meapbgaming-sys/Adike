@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v5
 
       - name: Setup Java
@@ -23,18 +23,27 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        continue-on-error: true
 
-      - name: Accept Android Licenses
+      - name: Install Android SDK
         shell: bash
         run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses || true
+          SDK="$ANDROID_HOME"
+          echo "Android SDK: $SDK"
 
-      - name: Install Android SDK Packages
-        shell: bash
-        run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
-          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$SDK/cmdline-tools/16.0/bin/sdkmanager"
+
+          if [ ! -f "$SDKMANAGER" ]; then
+            SDKMANAGER=$(find "$SDK/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          fi
+
+          echo "Using: $SDKMANAGER"
+
+          "$SDKMANAGER" --sdk_root="$SDK" --licenses </dev/null || true
+
+          "$SDKMANAGER" --sdk_root="$SDK" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
